@@ -20,14 +20,4 @@ public class UserController {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
-
-    @GetMapping("/test")
-    public ResponseEntity<String> testFirebase() {
-        try {
-            FirebaseDatabase.getInstance().getReference("test").push().setValueAsync("ping").get();
-            return ResponseEntity.ok("Firebase write successful!");
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Firebase write failed: " + e.getMessage());
-        }
-    }
 }
