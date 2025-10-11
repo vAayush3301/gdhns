@@ -13,6 +13,7 @@ public class UserRegistrationModel {
     private String projectType;
     private String[] teamMembers;
     private String createdAt;
+    private String photoLink, videoLink;
 
     public UserRegistrationModel() {
         this.createdAt = getCurrentTimestamp();
@@ -126,5 +127,25 @@ public class UserRegistrationModel {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getPhotoLink() {
+        return photoLink;
+    }
+
+    public void setPhotoLink(String photoLink) {
+        this.photoLink = photoLink;
+    }
+
+    public String getVideoLink() {
+        return videoLink;
+    }
+
+    public void setVideoLink(String videoLink) {
+        this.videoLink = videoLink;
     }
 }

@@ -38,3 +38,4 @@ out/
 
 ### serviceAccountKey ###
 serviceAccountKey.json
+serviceAccountGoogleAPIKey.json
