@@ -1,0 +1,22 @@
+package av.gdhns.club.main.controllers;
+
+import av.gdhns.club.main.model.UserRegistrationModel;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/registration_member")
+public class UserController {
+    private final DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("member_registrations");
+
+    @PostMapping
+    public ResponseEntity<String> createMemberRegistration(@RequestBody UserRegistrationModel registration) {
+        userRef.child(registration.getPhoneNumber()).push().setValueAsync(registration);
+        return ResponseEntity.ok("New Member Registered: " + registration.getFullName());
+    }
+}

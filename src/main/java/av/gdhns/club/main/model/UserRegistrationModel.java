@@ -1,13 +1,18 @@
 package av.gdhns.club.main.model;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class UserRegistrationModel {
     private String fullName;
+    private String phoneNumber;
     private String classId;
     private String section;
     private String admNo;
     private String idea, description;
     private String projectType;
     private String[] teamMembers;
+    private String createdAt;
 
     public UserRegistrationModel(String projectType, String description, String idea, String admNo, String section, String classId, String fullName) {
         this.projectType = projectType;
@@ -17,6 +22,8 @@ public class UserRegistrationModel {
         this.section = section;
         this.classId = classId;
         this.fullName = fullName;
+
+        this.createdAt = getCurrentTimestamp();
     }
 
     public UserRegistrationModel(String fullName, String classId, String section, String admNo, String idea, String description, String projectType, String[] teamMembers) {
@@ -28,6 +35,8 @@ public class UserRegistrationModel {
         this.description = description;
         this.projectType = projectType;
         this.teamMembers = teamMembers;
+
+        this.createdAt = getCurrentTimestamp();
     }
 
     public String getFullName() {
@@ -97,5 +106,22 @@ public class UserRegistrationModel {
     @Override
     public String toString() {
         return fullName;
+    }
+
+    private String getCurrentTimestamp() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        return sdf.format(new Date());
+    }
+
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }
