@@ -14,6 +14,7 @@ public class UserController {
     @PostMapping
     public ResponseEntity<String> createMemberRegistration(@RequestBody UserRegistrationModel registration) {
         try {
+            System.out.println("Pushing registration: " + registration);
             userRef.child(registration.getPhoneNumber()).push().setValueAsync(registration).get();
             return ResponseEntity.ok("New Member Registered: " + registration.getFullName());
         } catch (Exception e) {
