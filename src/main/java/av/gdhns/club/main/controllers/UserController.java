@@ -4,10 +4,7 @@ import av.gdhns.club.main.model.UserRegistrationModel;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/registration_member")
@@ -21,6 +18,16 @@ public class UserController {
             return ResponseEntity.ok("New Member Registered: " + registration.getFullName());
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> testFirebase() {
+        try {
+            FirebaseDatabase.getInstance().getReference("test").push().setValueAsync("ping").get();
+            return ResponseEntity.ok("Firebase write successful!");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Firebase write failed: " + e.getMessage());
         }
     }
 }
