@@ -14,6 +14,9 @@ public class UserRegistrationModel {
     private String[] teamMembers;
     private String createdAt;
 
+    public UserRegistrationModel() {
+    }
+
     public UserRegistrationModel(String fullName, String phoneNumber, String classId, String section, String admNo, String idea, String description, String projectType) {
         this.fullName = fullName;
         this.phoneNumber = phoneNumber;
