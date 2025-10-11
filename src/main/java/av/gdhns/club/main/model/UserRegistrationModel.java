@@ -15,6 +15,7 @@ public class UserRegistrationModel {
     private String createdAt;
 
     public UserRegistrationModel() {
+        this.createdAt = getCurrentTimestamp();
     }
 
     public UserRegistrationModel(String fullName, String phoneNumber, String classId, String section, String admNo, String idea, String description, String projectType) {
