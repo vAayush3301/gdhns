@@ -16,7 +16,11 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<String> createMemberRegistration(@RequestBody UserRegistrationModel registration) {
-        userRef.child(registration.getPhoneNumber()).push().setValueAsync(registration);
-        return ResponseEntity.ok("New Member Registered: " + registration.getFullName());
+        try {
+            userRef.child(registration.getPhoneNumber()).push().setValueAsync(registration);
+            return ResponseEntity.ok("New Member Registered: " + registration.getFullName());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
     }
 }

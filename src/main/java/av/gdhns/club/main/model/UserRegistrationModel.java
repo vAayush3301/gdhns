@@ -14,16 +14,15 @@ public class UserRegistrationModel {
     private String[] teamMembers;
     private String createdAt;
 
-    public UserRegistrationModel(String projectType, String description, String idea, String admNo, String section, String classId, String fullName) {
-        this.projectType = projectType;
-        this.description = description;
-        this.idea = idea;
-        this.admNo = admNo;
-        this.section = section;
-        this.classId = classId;
+    public UserRegistrationModel(String fullName, String phoneNumber, String classId, String section, String admNo, String idea, String description, String projectType) {
         this.fullName = fullName;
-
-        this.createdAt = getCurrentTimestamp();
+        this.phoneNumber = phoneNumber;
+        this.classId = classId;
+        this.section = section;
+        this.admNo = admNo;
+        this.idea = idea;
+        this.description = description;
+        this.projectType = projectType;
     }
 
     public UserRegistrationModel(String fullName, String classId, String section, String admNo, String idea, String description, String projectType, String[] teamMembers) {
