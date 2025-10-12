@@ -13,7 +13,10 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
@@ -27,7 +30,7 @@ public class UserController {
     private final DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("member_registrations");
 
     @PostMapping
-    public ResponseEntity<String> createMemberRegistration(@RequestParam("data") String userData, @RequestParam("photo")MultipartFile photo, @RequestParam("video") MultipartFile video) {
+    public ResponseEntity<String> createMemberRegistration(@RequestParam("data") String userData, @RequestParam("photo") MultipartFile photo, @RequestParam("video") MultipartFile video) {
         try {
             UserRegistrationModel registration = new ObjectMapper().readValue(userData, UserRegistrationModel.class);
             registration.setCreatedAt(java.time.Instant.now().toString());
