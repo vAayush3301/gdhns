@@ -33,17 +33,19 @@ public class UserController {
             UserRegistrationModel registration = new ObjectMapper().readValue(userJson, UserRegistrationModel.class);
             registration.setCreatedAt(Instant.now().toString());
 
-            File photoFile = File.createTempFile("photo_", "_" + photo.getOriginalFilename());
-            photo.transferTo(photoFile);
+            if (!photo.isEmpty() || !video.isEmpty()) {
+                File photoFile = File.createTempFile("photo_", "_" + photo.getOriginalFilename());
+                photo.transferTo(photoFile);
 
-            File videoFile = File.createTempFile("video_", "_" + video.getOriginalFilename());
-            video.transferTo(videoFile);
+                File videoFile = File.createTempFile("video_", "_" + video.getOriginalFilename());
+                video.transferTo(videoFile);
 
-            String photoLink = uploadToSupabase(photoFile, photo.getContentType());
-            String videoLink = uploadToSupabase(videoFile, video.getContentType());
+                String photoLink = uploadToSupabase(photoFile, photo.getContentType());
+                String videoLink = uploadToSupabase(videoFile, video.getContentType());
 
-            registration.setPhotoLink(photoLink);
-            registration.setVideoLink(videoLink);
+                registration.setPhotoLink(photoLink);
+                registration.setVideoLink(videoLink);
+            }
 
             userRef.orderByChild("email").equalTo(registration.getEmail())
                     .addListenerForSingleValueEvent(new ValueEventListener() {
