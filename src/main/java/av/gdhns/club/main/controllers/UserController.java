@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +28,16 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<String> createMemberRegistration(@RequestParam("data") String userJson, @RequestParam("photo") MultipartFile photo, @RequestParam("video") MultipartFile video) {
+        if (userJson == null || userJson.isEmpty()) {
+            return ResponseEntity.status(400).body("Error: userJson is required");
+        }
+        if (photo == null || photo.isEmpty()) {
+            return ResponseEntity.status(400).body("Error: Photo is required");
+        }
+        if (video == null || video.isEmpty()) {
+            return ResponseEntity.status(400).body("Error: Video is required");
+        }
+
         final StringBuilder response = new StringBuilder();
 
         try {
@@ -70,12 +81,14 @@ public class UserController {
 
             return ResponseEntity.ok("Processing... Check logs for result");
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
 
     public String uploadToSupabase(File file, String contentType) throws IOException {
         String fileName = file.getName();
+        System.out.println("Uploading File: " + fileName);
 
         WebClient client = WebClient.builder()
                 .baseUrl(SUPABASE_URL)
@@ -90,6 +103,10 @@ public class UserController {
                 .contentType(MediaType.parseMediaType(contentType))
                 .bodyValue(fileBytes)
                 .retrieve()
+                .onStatus(status -> status.isError(), response -> {
+                    System.out.println("Supabase error: " + response.statusCode() + " - " + response.bodyToMono(String.class).block());
+                    return response.createException().flatMap(Mono::error);
+                })
                 .bodyToMono(String.class)
                 .block();
     }
