@@ -10,7 +10,7 @@ public class UserRegistrationModel {
     private String section;
     private String admNo;
     private String idea, description;
-    private String projectType;
+    private String projectTypeTopic;
     private String[] teamMembers;
     private String createdAt;
     private String photoLink, videoLink;
@@ -20,7 +20,7 @@ public class UserRegistrationModel {
         this.createdAt = getCurrentTimestamp();
     }
 
-    public UserRegistrationModel(String fullName, String phoneNumber, String email, String classId, String section, String admNo, String idea, String description, String projectType) {
+    public UserRegistrationModel(String fullName, String phoneNumber, String email, String classId, String section, String admNo, String idea, String description, String projectTypeTopicTopic) {
         this.fullName = fullName;
         this.phoneNumber = phoneNumber;
         this.email = email;
@@ -29,10 +29,10 @@ public class UserRegistrationModel {
         this.admNo = admNo;
         this.idea = idea;
         this.description = description;
-        this.projectType = projectType;
+        this.projectTypeTopic = projectTypeTopic;
     }
 
-    public UserRegistrationModel(String projectName, String phoneNumber, String email, String classId, String section, String admNo, String idea, String description, String projectType, String[] teamMembers) {
+    public UserRegistrationModel(String projectName, String phoneNumber, String email, String classId, String section, String admNo, String idea, String description, String projectTypeTopic, String[] teamMembers) {
         this.fullName = projectName;
         this.phoneNumber = phoneNumber;
         this.email = email;
@@ -41,7 +41,7 @@ public class UserRegistrationModel {
         this.admNo = admNo;
         this.idea = idea;
         this.description = description;
-        this.projectType = projectType;
+        this.projectTypeTopic = projectTypeTopic;
         this.teamMembers = teamMembers;
 
         this.createdAt = getCurrentTimestamp();
@@ -95,12 +95,12 @@ public class UserRegistrationModel {
         this.description = description;
     }
 
-    public String getProjectType() {
-        return projectType;
+    public String getprojectTypeTopic() {
+        return projectTypeTopic;
     }
 
-    public void setProjectType(String projectType) {
-        this.projectType = projectType;
+    public void setprojectTypeTopic(String projectTypeTopic) {
+        this.projectTypeTopic = projectTypeTopic;
     }
 
     public String[] getTeamMembers() {
