@@ -1,33 +1,58 @@
 package av.gdhns.club.main.controllers;
 
 import av.gdhns.club.main.model.UserRegistrationModel;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.database.*;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.time.Instant;
 
 @RestController
 @RequestMapping("/registration_member")
 public class UserController {
-    private final String driveJson = System.getenv("GOOGLE_APPLICATION_CREDENTIALS_DRIVE_API_JSON");
-
+    private static final String SUPABASE_URL = "https://pmzkotxaodkqihopptti.supabase.co";
+    private static final String SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtemtvdHhhb2RrcWlob3BwdHRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNjMyNzEsImV4cCI6MjA3NTkzOTI3MX0.zzNqFU0nPdjxeMP3YAbzJKr_7Ra_b_BP03HLM9kECAg";
+    private static final String SUPABASE_STORAGE_BUCKET = "user-files";
     private final DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("member_registrations");
 
     @PostMapping
-    public ResponseEntity<String> createMemberRegistration(@RequestBody UserRegistrationModel registration) {
+    public ResponseEntity<String> createMemberRegistration(@RequestParam("data") String userJson, @RequestParam("photo") MultipartFile photo, @RequestParam("video") MultipartFile video) {
         final StringBuilder response = new StringBuilder();
 
         try {
-            userRef.orderByChild("phoneNumber").equalTo(registration.getPhoneNumber())
+            UserRegistrationModel registration = new ObjectMapper().readValue(userJson, UserRegistrationModel.class);
+            registration.setCreatedAt(Instant.now().toString());
+
+            File photoFile = File.createTempFile("photo_", "_" + photo.getOriginalFilename());
+            photo.transferTo(photoFile);
+
+            File videoFile = File.createTempFile("video_", "_" + video.getOriginalFilename());
+            video.transferTo(videoFile);
+
+            String photoLink = uploadToSupabase(photoFile, photo.getContentType());
+            String videoLink = uploadToSupabase(videoFile, video.getContentType());
+
+            registration.setPhotoLink(photoLink);
+            registration.setVideoLink(videoLink);
+
+            userRef.orderByChild("email").equalTo(registration.getEmail())
                     .addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(DataSnapshot dataSnapshot) {
                             if (dataSnapshot.exists()) {
-                                response.append("User with phone ").append(registration.getPhoneNumber()).append(" already exists.");
+                                response.append("User with email ").append(registration.getEmail()).append(" already exists.");
                             } else {
-                                userRef.child(registration.getPhoneNumber()).push().setValueAsync(registration);
+                                userRef.child(registration.getEmail()).push().setValueAsync(registration);
                                 response.append("User added: ").append(registration.getFullName());
                             }
                         }
@@ -45,5 +70,29 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
+    }
+
+    public String uploadToSupabase(File file, String contentType) throws IOException {
+        String fileName = file.getName();
+
+        WebClient client = WebClient.builder()
+                .baseUrl(SUPABASE_URL)
+                .defaultHeader("apikey", SUPABASE_KEY)
+                .defaultHeader("Authorization", "Bearer " + SUPABASE_KEY)
+                .build();
+
+        byte[] fileBytes = Files.readAllBytes(file.toPath());
+
+        return client.put()
+                .uri("/storage/v1/object/" + SUPABASE_STORAGE_BUCKET + "/" + fileName)
+                .contentType(MediaType.parseMediaType(contentType))
+                .bodyValue(fileBytes)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+    }
+
+    public String getPublicUrl(String fileName) {
+        return SUPABASE_URL + "/storage/v1/object/public/" + SUPABASE_STORAGE_BUCKET + "/" + fileName;
     }
 }

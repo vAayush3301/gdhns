@@ -20,7 +20,7 @@ public class UserRegistrationModel {
         this.createdAt = getCurrentTimestamp();
     }
 
-    public UserRegistrationModel(String fullName, String phoneNumber, String email, String classId, String section, String admNo, String idea, String description, String projectType, String photoLink, String videoLink) {
+    public UserRegistrationModel(String fullName, String phoneNumber, String email, String classId, String section, String admNo, String idea, String description, String projectType) {
         this.fullName = fullName;
         this.phoneNumber = phoneNumber;
         this.email = email;
@@ -30,11 +30,9 @@ public class UserRegistrationModel {
         this.idea = idea;
         this.description = description;
         this.projectType = projectType;
-        this.photoLink = photoLink;
-        this.videoLink = videoLink;
     }
 
-    public UserRegistrationModel(String projectName, String phoneNumber, String email, String classId, String section, String admNo, String idea, String description, String projectType, String[] teamMembers, String photoLink, String videoLink) {
+    public UserRegistrationModel(String projectName, String phoneNumber, String email, String classId, String section, String admNo, String idea, String description, String projectType, String[] teamMembers) {
         this.fullName = projectName;
         this.phoneNumber = phoneNumber;
         this.email = email;
@@ -45,8 +43,6 @@ public class UserRegistrationModel {
         this.description = description;
         this.projectType = projectType;
         this.teamMembers = teamMembers;
-        this.photoLink = photoLink;
-        this.videoLink = videoLink;
 
         this.createdAt = getCurrentTimestamp();
     }
