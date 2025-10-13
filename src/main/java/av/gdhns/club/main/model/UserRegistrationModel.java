@@ -14,24 +14,30 @@ public class UserRegistrationModel {
     private String[] teamMembers;
     private String createdAt;
     private String photoLink, videoLink;
+    private String email;
 
     public UserRegistrationModel() {
         this.createdAt = getCurrentTimestamp();
     }
 
-    public UserRegistrationModel(String fullName, String phoneNumber, String classId, String section, String admNo, String idea, String description, String projectType) {
+    public UserRegistrationModel(String fullName, String phoneNumber, String email, String classId, String section, String admNo, String idea, String description, String projectType, String photoLink, String videoLink) {
         this.fullName = fullName;
         this.phoneNumber = phoneNumber;
+        this.email = email;
         this.classId = classId;
         this.section = section;
         this.admNo = admNo;
         this.idea = idea;
         this.description = description;
         this.projectType = projectType;
+        this.photoLink = photoLink;
+        this.videoLink = videoLink;
     }
 
-    public UserRegistrationModel(String fullName, String classId, String section, String admNo, String idea, String description, String projectType, String[] teamMembers) {
-        this.fullName = fullName;
+    public UserRegistrationModel(String projectName, String phoneNumber, String email, String classId, String section, String admNo, String idea, String description, String projectType, String[] teamMembers, String photoLink, String videoLink) {
+        this.fullName = projectName;
+        this.phoneNumber = phoneNumber;
+        this.email = email;
         this.classId = classId;
         this.section = section;
         this.admNo = admNo;
@@ -39,6 +45,8 @@ public class UserRegistrationModel {
         this.description = description;
         this.projectType = projectType;
         this.teamMembers = teamMembers;
+        this.photoLink = photoLink;
+        this.videoLink = videoLink;
 
         this.createdAt = getCurrentTimestamp();
     }
@@ -147,5 +155,13 @@ public class UserRegistrationModel {
 
     public void setVideoLink(String videoLink) {
         this.videoLink = videoLink;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }
