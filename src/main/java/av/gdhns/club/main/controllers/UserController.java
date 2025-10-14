@@ -45,12 +45,6 @@ public class UserController {
         if (userJson == null || userJson.isEmpty()) {
             return Mono.just(ResponseEntity.status(400).body("Error: userJson is required"));
         }
-        if (photo == null || photo.isEmpty()) {
-            return Mono.just(ResponseEntity.status(400).body("Error: Photo is required"));
-        }
-        if (video == null || video.isEmpty()) {
-            return Mono.just(ResponseEntity.status(400).body("Error: Video is required"));
-        }
 
         try {
             // Parse JSON
