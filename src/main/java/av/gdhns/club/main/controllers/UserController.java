@@ -1,5 +1,6 @@
 package av.gdhns.club.main.controllers;
 
+import av.gdhns.club.main.helpers.Mail;
 import av.gdhns.club.main.model.UserRegistrationModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.database.*;
@@ -12,10 +13,15 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+import static av.gdhns.club.main.helpers.Mail.hash;
 
 @RestController
 @RequestMapping("/registration_member")
@@ -39,86 +45,25 @@ public class UserController {
             @RequestParam("data") String userJson,
             @RequestParam("photo") MultipartFile photo,
             @RequestParam("video") MultipartFile video) {
-        final StringBuilder response = new StringBuilder();
 
-        // Validate inputs
         if (userJson == null || userJson.isEmpty()) {
             return Mono.just(ResponseEntity.status(400).body("Error: userJson is required"));
         }
-        if (photo == null || photo.isEmpty()) {
-            return Mono.just(ResponseEntity.status(400).body("Error: Photo is required"));
-        }
-        if (video == null || video.isEmpty()) {
-            return Mono.just(ResponseEntity.status(400).body("Error: Video is required"));
-        }
 
         try {
-            // Parse JSON
             UserRegistrationModel registration = new ObjectMapper().readValue(userJson, UserRegistrationModel.class);
             registration.setCreatedAt(Instant.now().toString());
 
-            // Prepare file names
-            String photoFileName = "photo_" + System.currentTimeMillis() +
-                    (photo.getOriginalFilename() != null ? photo.getOriginalFilename().substring(photo.getOriginalFilename().lastIndexOf(".")) : ".png");
-            String videoFileName = "video_" + System.currentTimeMillis() +
-                    (video.getOriginalFilename() != null ? video.getOriginalFilename().substring(video.getOriginalFilename().lastIndexOf(".")) : ".mp4");
+            String otp = hash(Mail.generateOTP());
+            boolean sent = Mail.sendOTP(registration.getEmail(), otp);
+            if (!sent) {
+                return Mono.just(ResponseEntity.status(500).body("Error: Failed to send OTP"));
+            }
+            if (!storeOtp(userRef, registration.getEmail(), otp)) {
+                return Mono.just(ResponseEntity.status(500).body("Error: Failed to save OTP"));
+            }
 
-            // Create temporary files
-            File photoFile = File.createTempFile("photo_", photoFileName);
-            File videoFile = File.createTempFile("video_", videoFileName);
-
-            // Transfer files and upload to Supabase reactively
-            return Mono.just(photo)
-                    .flatMap(p -> Mono.fromCallable(() -> {
-                        p.transferTo(photoFile);
-                        return photoFile;
-                    }))
-                    .flatMap(pFile -> uploadToSupabase(pFile, photo.getContentType() != null ? photo.getContentType() : "application/octet-stream", photoFileName))
-                    .flatMap(photoLink -> Mono.just(video)
-                            .flatMap(v -> Mono.fromCallable(() -> {
-                                v.transferTo(videoFile);
-                                return videoFile;
-                            }))
-                            .flatMap(vFile -> uploadToSupabase(vFile, video.getContentType() != null ? video.getContentType() : "application/octet-stream", videoFileName))
-                            .map(videoLink -> {
-                                registration.setPhotoLink(photoLink);
-                                registration.setVideoLink(videoLink);
-                                return registration;
-                            }))
-                    .flatMap(reg -> Mono.fromCallable(() -> {
-                        // Check for existing user by email
-                        userRef.orderByChild("email").equalTo(reg.getEmail())
-                                .addListenerForSingleValueEvent(new ValueEventListener() {
-                                    @Override
-                                    public void onDataChange(DataSnapshot dataSnapshot) {
-                                        if (dataSnapshot.exists()) {
-                                            response.append("User with email ").append(reg.getEmail()).append(" already exists.");
-                                        } else {
-                                            userRef.child(reg.getEmail()).push().setValueAsync(reg);
-                                            response.append("User added: ").append(reg.getFullName());
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onCancelled(DatabaseError databaseError) {
-                                        response.append("Firebase error: ").append(databaseError.getMessage());
-                                    }
-                                });
-
-                        // Save by phone number (consider consolidating)
-                        userRef.child(reg.getPhoneNumber()).push().setValueAsync(reg);
-                        return response.toString();
-                    }))
-                    .map(result -> ResponseEntity.ok(result.isEmpty() ? "Processing... Check logs for result" : result))
-                    .doFinally(signal -> {
-                        // Clean up temporary files
-                        if (photoFile.exists()) photoFile.delete();
-                        if (videoFile.exists()) videoFile.delete();
-                    })
-                    .onErrorResume(e -> {
-                        e.printStackTrace();
-                        return Mono.just(ResponseEntity.status(500).body("Error: " + e.getMessage()));
-                    });
+            return uploads(registration, photo, video);
         } catch (Exception e) {
             e.printStackTrace();
             return Mono.just(ResponseEntity.status(500).body("Error: " + e.getMessage()));
@@ -149,5 +94,130 @@ public class UserController {
 
     public String getPublicUrl(String fileName) {
         return SUPABASE_URL + "/storage/v1/object/public/" + SUPABASE_STORAGE_BUCKET + "/" + fileName;
+    }
+
+    private Mono<ResponseEntity<String>> uploads(UserRegistrationModel registration, MultipartFile photo, MultipartFile video) throws IOException {
+        final StringBuilder response = new StringBuilder();
+
+        String photoFileName = "photo_" + System.currentTimeMillis() +
+                (photo.getOriginalFilename() != null ? photo.getOriginalFilename().substring(photo.getOriginalFilename().lastIndexOf(".")) : ".png");
+        String videoFileName = "video_" + System.currentTimeMillis() +
+                (video.getOriginalFilename() != null ? video.getOriginalFilename().substring(video.getOriginalFilename().lastIndexOf(".")) : ".mp4");
+
+        File photoFile = File.createTempFile("photo_", photoFileName);
+        File videoFile = File.createTempFile("video_", videoFileName);
+
+        return Mono.just(photo)
+                .flatMap(p -> Mono.fromCallable(() -> {
+                    p.transferTo(photoFile);
+                    return photoFile;
+                }))
+                .flatMap(pFile -> uploadToSupabase(pFile, photo.getContentType() != null ? photo.getContentType() : "application/octet-stream", photoFileName))
+                .flatMap(photoLink -> Mono.just(video)
+                        .flatMap(v -> Mono.fromCallable(() -> {
+                            v.transferTo(videoFile);
+                            return videoFile;
+                        }))
+                        .flatMap(vFile -> uploadToSupabase(vFile, video.getContentType() != null ? video.getContentType() : "application/octet-stream", videoFileName))
+                        .map(videoLink -> {
+                            registration.setPhotoLink(photoLink);
+                            registration.setVideoLink(videoLink);
+                            return registration;
+                        }))
+                .flatMap(reg -> Mono.fromCallable(() -> {
+                    userRef.orderByChild("email").equalTo(reg.getEmail())
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(DataSnapshot dataSnapshot) {
+                                    if (dataSnapshot.exists()) {
+                                        response.append("User with email ").append(reg.getEmail()).append(" already exists.");
+                                    } else {
+                                        userRef.child(reg.getEmail()).push().setValueAsync(reg);
+                                        response.append("User added: ").append(reg.getFullName());
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(DatabaseError databaseError) {
+                                    response.append("Firebase error: ").append(databaseError.getMessage());
+                                }
+                            });
+
+                    userRef.child(reg.getPhoneNumber()).push().setValueAsync(reg);
+                    return response.toString();
+                }))
+                .map(result -> ResponseEntity.ok(result.isEmpty() ? "Processing... Check logs for result" : result))
+                .doFinally(signal -> {
+                    // Clean up temporary files
+                    if (photoFile.exists()) photoFile.delete();
+                    if (videoFile.exists()) videoFile.delete();
+                })
+                .onErrorResume(e -> {
+                    e.printStackTrace();
+                    return Mono.just(ResponseEntity.status(500).body("Error: " + e.getMessage()));
+                });
+    }
+
+    private boolean storeOtp(DatabaseReference ref, String email, String otp) {
+        final boolean[] stored = {false};
+
+        Map<String, Object> otpData = new HashMap<>();
+        otpData.put("otp", otp);
+        otpData.put("expiresAt", Instant.now().plusSeconds(600).toString());
+        otpData.put("used", false);
+
+        ref.child("otps").child(email.replace(".", "_")).setValueAsync(otpData).addListener(() -> {
+            System.out.println("OTP stored for E-Mail: " + email);
+            stored[0] = true;
+        }, Runnable::run);
+
+        return stored[0];
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<String> verifyOtp(@RequestParam String email,
+                                            @RequestParam String otpEntered) {
+        try {
+            boolean valid = checkOtp(userRef, email, otpEntered);
+            if (valid) return ResponseEntity.ok("OTP verified successfully");
+            else return ResponseEntity.status(400).body("Invalid or expired OTP");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error verifying OTP");
+        }
+    }
+
+    private boolean checkOtp(DatabaseReference ref, String email, String otpEntered) {
+        DatabaseReference otpRef = ref
+                .child("otps")
+                .child(email.replace(".", "_"));
+
+        final boolean[] result = {false};
+        otpRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                if (!snapshot.exists()) return;
+                String storedHash = snapshot.child("otp").getValue(String.class);
+                String expiresAtStr = snapshot.child("expiresAt").getValue(String.class);
+                boolean used = snapshot.child("used").getValue(Boolean.class);
+                Instant expiresAt = Instant.parse(expiresAtStr);
+
+                if (!used && expiresAt.isAfter(Instant.now()) && hash(otpEntered).equals(storedHash)) {
+                    result[0] = true;
+                    otpRef.child("used").setValueAsync(true);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                System.err.println("Firebase error: " + error.getMessage());
+            }
+        });
+
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException ignored) {
+        }
+        return result[0];
     }
 }
