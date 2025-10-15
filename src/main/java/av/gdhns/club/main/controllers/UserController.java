@@ -43,8 +43,8 @@ public class UserController {
     @PostMapping
     public Mono<ResponseEntity<String>> createMemberRegistration(
             @RequestParam("data") String userJson,
-            @RequestParam("photo") MultipartFile photo,
-            @RequestParam("video") MultipartFile video) {
+            @RequestParam(value = "photo", required = false) MultipartFile photo,
+            @RequestParam(value = "video", required = false) MultipartFile video) {
 
         if (userJson == null || userJson.isEmpty()) {
             return Mono.just(ResponseEntity.status(400).body("Error: userJson is required"));
