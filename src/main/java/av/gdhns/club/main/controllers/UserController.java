@@ -54,7 +54,7 @@ public class UserController {
             UserRegistrationModel registration = new ObjectMapper().readValue(userJson, UserRegistrationModel.class);
             registration.setCreatedAt(Instant.now().toString());
 
-            String otp = hash(Mail.generateOTP());
+            String otp = Mail.generateOTP();
             boolean sent = Mail.sendOTP(registration.getEmail(), otp);
             if (!sent) {
                 return Mono.just(ResponseEntity.status(500).body("Error: Failed to send OTP"));
@@ -162,7 +162,7 @@ public class UserController {
         final boolean[] stored = {false};
 
         Map<String, Object> otpData = new HashMap<>();
-        otpData.put("otp", otp);
+        otpData.put("otp", hash(otp));
         otpData.put("expiresAt", Instant.now().plusSeconds(600).toString());
         otpData.put("used", false);
 

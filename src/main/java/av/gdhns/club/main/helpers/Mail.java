@@ -1,15 +1,17 @@
 package av.gdhns.club.main.helpers;
 
 import okhttp3.*;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.Objects;
 
 public class Mail {
     private static final String API_KEY = "7851eb09f53f5fdf1a606d6aab50872dc87770c332f14dde88730ff24d737c18";
     private static final String FROM = "ggpsdhn@16481b8a47cfd701.maileroo.org";
-    private static String ENDPOINT = "https://smtp.maileroo.com/api/v2/emails";
+    private static final String ENDPOINT = "https://smtp.maileroo.com/api/v2/emails";
 
     public static String generateOTP() {
         SecureRandom rnd = new SecureRandom();
@@ -30,24 +32,11 @@ public class Mail {
             throw new RuntimeException(e);
         }
     }
+
     public static boolean sendOTP(String to, String otp) throws IOException {
         OkHttpClient client = new OkHttpClient();
 
-        JSONObject fromObj = new JSONObject();
-        fromObj.put("address", FROM);
-        fromObj.put("name", "GGPS DHN");
-
-        JSONObject toObj = new JSONObject();
-        toObj.put("address", to);
-        toObj.put("name", "User Name");
-
-        JSONObject body = new JSONObject();
-        body.put("from", fromObj);
-        body.put("to", toObj);  // ✅ single email object, not array or string
-        body.put("subject", "Your OTP Code");
-        body.put("plain", "Your OTP is: " + otp + " (valid for 5 min)");
-
-        System.out.println("BODY: " + body.toString(2)); // 👈 print this
+        JSONObject body = getJsonObject(to, otp);
 
         Request req = new Request.Builder()
                 .url(ENDPOINT)
@@ -56,16 +45,32 @@ public class Mail {
                 .post(RequestBody.create(body.toString(), MediaType.get("application/json")))
                 .build();
 
-        System.out.println(req);
-
         try (Response resp = client.newCall(req).execute()) {
             if (resp.isSuccessful()) {
                 System.out.println("Email sent!");
                 return true;
             } else {
-                System.err.println("Error: " + resp.code() + " — " + resp.body().string());
+                System.err.println("Error: " + resp.code() + " — " + Objects.requireNonNull(resp.body()).string());
                 return false;
             }
         }
+    }
+
+    @NotNull
+    private static JSONObject getJsonObject(String to, String otp) {
+        JSONObject fromObj = new JSONObject();
+        fromObj.put("address", FROM);
+        fromObj.put("name", "GGPS Dhanbad Club");
+
+        JSONObject toObj = new JSONObject();
+        toObj.put("address", to);
+        toObj.put("name", "User Name");
+
+        JSONObject body = new JSONObject();
+        body.put("from", fromObj);
+        body.put("to", toObj);
+        body.put("subject", "Your OTP Code");
+        body.put("plain", "Your OTP is: " + otp + " (valid for 5 min)");
+        return body;
     }
 }
