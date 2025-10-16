@@ -64,6 +64,14 @@ public class UserController {
                 return Mono.just(ResponseEntity.status(500).body("Error: Failed to save OTP"));
             }
 
+            if (photo == null) {
+                return uploadsPhoto(registration, video);
+            } else if (video == null) {
+                return uploads(registration, photo);
+            } else if (photo == null && video == null) {
+                return uploads(registration);
+            }
+
             return uploads(registration, photo, video);
         } catch (Exception e) {
             e.printStackTrace();
@@ -171,6 +179,164 @@ public class UserController {
                                 });
                         return response.toString();
                     });
+                })
+                .map(result -> ResponseEntity.ok(result.isEmpty() ? "Processing... Check logs" : result))
+                .onErrorResume(e -> {
+                    e.printStackTrace();
+                    return Mono.just(ResponseEntity.status(500).body("Error: " + e.getMessage()));
+                });
+    }
+
+    private Mono<ResponseEntity<String>> uploads(UserRegistrationModel registration,
+                                                 MultipartFile photo) {
+
+        final StringBuilder response = new StringBuilder();
+
+        Mono<String> photoLinkMono;
+        if (photo != null && !photo.isEmpty()) {
+            String photoFileName = "photo_" + System.currentTimeMillis() +
+                    (photo.getOriginalFilename() != null ?
+                            photo.getOriginalFilename().substring(photo.getOriginalFilename().lastIndexOf(".")) : ".png");
+            File photoFile;
+            try {
+                photoFile = File.createTempFile("photo_", photoFileName);
+                photo.transferTo(photoFile);
+            } catch (IOException e) {
+                return Mono.just(ResponseEntity.status(500).body("Photo save error: " + e.getMessage()));
+            }
+            photoLinkMono = uploadToSupabase(photoFile,
+                    photo.getContentType() != null ? photo.getContentType() : "application/octet-stream",
+                    photoFileName)
+                    .doFinally(signal -> photoFile.delete());
+        } else {
+            photoLinkMono = Mono.just(null);
+        }
+
+        Mono<String> videoLinkMono = Mono.just(null);
+
+        return Mono.zip(photoLinkMono, videoLinkMono)
+                .flatMap(tuple -> {
+                    String photoLink = tuple.getT1();
+                    String videoLink = tuple.getT2();
+
+                    registration.setPhotoLink(photoLink);
+                    registration.setVideoLink(videoLink);
+
+                    return Mono.fromCallable(() -> {
+                        userRef.orderByChild("email").equalTo(registration.getEmail())
+                                .addListenerForSingleValueEvent(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(DataSnapshot snapshot) {
+                                        if (snapshot.exists()) {
+                                            response.append("User with email ").append(registration.getEmail()).append(" already exists.");
+                                        } else {
+                                            userRef.child(registration.getEmail().replace(".", "_")).setValueAsync(registration);
+                                            response.append("User added: ").append(registration.getFullName());
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onCancelled(DatabaseError error) {
+                                        response.append("Firebase error: ").append(error.getMessage());
+                                    }
+                                });
+                        return response.toString();
+                    });
+                })
+                .map(result -> ResponseEntity.ok(result.isEmpty() ? "Processing... Check logs" : result))
+                .onErrorResume(e -> {
+                    e.printStackTrace();
+                    return Mono.just(ResponseEntity.status(500).body("Error: " + e.getMessage()));
+                });
+    }
+
+    private Mono<ResponseEntity<String>> uploadsPhoto(UserRegistrationModel registration,
+                                                      MultipartFile video) {
+
+        final StringBuilder response = new StringBuilder();
+
+        Mono<String> photoLinkMono;
+
+        photoLinkMono = Mono.just(null);
+
+        Mono<String> videoLinkMono;
+        if (video != null && !video.isEmpty()) {
+            String videoFileName = "video_" + System.currentTimeMillis() +
+                    (video.getOriginalFilename() != null ?
+                            video.getOriginalFilename().substring(video.getOriginalFilename().lastIndexOf(".")) : ".mp4");
+            File videoFile;
+            try {
+                videoFile = File.createTempFile("video_", videoFileName);
+                video.transferTo(videoFile);
+            } catch (IOException e) {
+                return Mono.just(ResponseEntity.status(500).body("Video save error: " + e.getMessage()));
+            }
+            videoLinkMono = uploadToSupabase(videoFile,
+                    video.getContentType() != null ? video.getContentType() : "application/octet-stream",
+                    videoFileName)
+                    .doFinally(signal -> videoFile.delete());
+        } else {
+            videoLinkMono = Mono.just(null);
+        }
+
+        return Mono.zip(photoLinkMono, videoLinkMono)
+                .flatMap(tuple -> {
+                    String photoLink = tuple.getT1();
+                    String videoLink = tuple.getT2();
+
+                    registration.setPhotoLink(photoLink);
+                    registration.setVideoLink(videoLink);
+
+                    return Mono.fromCallable(() -> {
+                        userRef.orderByChild("email").equalTo(registration.getEmail())
+                                .addListenerForSingleValueEvent(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(DataSnapshot snapshot) {
+                                        if (snapshot.exists()) {
+                                            response.append("User with email ").append(registration.getEmail()).append(" already exists.");
+                                        } else {
+                                            userRef.child(registration.getEmail().replace(".", "_")).setValueAsync(registration);
+                                            response.append("User added: ").append(registration.getFullName());
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onCancelled(DatabaseError error) {
+                                        response.append("Firebase error: ").append(error.getMessage());
+                                    }
+                                });
+                        return response.toString();
+                    });
+                })
+                .map(result -> ResponseEntity.ok(result.isEmpty() ? "Processing... Check logs" : result))
+                .onErrorResume(e -> {
+                    e.printStackTrace();
+                    return Mono.just(ResponseEntity.status(500).body("Error: " + e.getMessage()));
+                });
+    }
+
+    private Mono<ResponseEntity<String>> uploads(UserRegistrationModel registration) {
+        final StringBuilder response = new StringBuilder();
+
+        return Mono.fromCallable(() -> {
+                    userRef.orderByChild("email").equalTo(registration.getEmail())
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(DataSnapshot snapshot) {
+                                    if (snapshot.exists()) {
+                                        response.append("User with email ").append(registration.getEmail()).append(" already exists.");
+                                    } else {
+                                        userRef.child(registration.getEmail().replace(".", "_")).setValueAsync(registration);
+                                        response.append("User added: ").append(registration.getFullName());
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(DatabaseError error) {
+                                    response.append("Firebase error: ").append(error.getMessage());
+                                }
+                            });
+                    return response.toString();
                 })
                 .map(result -> ResponseEntity.ok(result.isEmpty() ? "Processing... Check logs" : result))
                 .onErrorResume(e -> {
