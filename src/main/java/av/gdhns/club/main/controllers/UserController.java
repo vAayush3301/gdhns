@@ -111,54 +111,50 @@ public class UserController {
 
         final StringBuilder response = new StringBuilder();
 
-        Mono<String> photoLinkMono;
-        if (photo != null && !photo.isEmpty()) {
-            String photoFileName = "photo_" + System.currentTimeMillis() +
-                    (photo.getOriginalFilename() != null ?
-                            photo.getOriginalFilename().substring(photo.getOriginalFilename().lastIndexOf(".")) : ".png");
-            File photoFile;
-            try {
-                photoFile = File.createTempFile("photo_", photoFileName);
-                photo.transferTo(photoFile);
-            } catch (IOException e) {
-                return Mono.just(ResponseEntity.status(500).body("Photo save error: " + e.getMessage()));
-            }
-            photoLinkMono = uploadToSupabase(photoFile,
-                    photo.getContentType() != null ? photo.getContentType() : "application/octet-stream",
-                    photoFileName)
-                    .doFinally(signal -> photoFile.delete());
-        } else {
-            photoLinkMono = Mono.just(null);
-        }
+        Mono<String> photoLinkMono = Mono.justOrEmpty(photo)
+                .filter(p -> !p.isEmpty())
+                .flatMap(p -> {
+                    String photoFileName = "photo_" + System.currentTimeMillis() +
+                            (p.getOriginalFilename() != null ?
+                                    p.getOriginalFilename().substring(p.getOriginalFilename().lastIndexOf(".")) : ".png");
+                    File photoFile;
+                    try {
+                        photoFile = File.createTempFile("photo_", photoFileName);
+                        p.transferTo(photoFile);
+                    } catch (IOException e) {
+                        return Mono.error(new RuntimeException("Photo save error: " + e.getMessage()));
+                    }
+                    return uploadToSupabase(photoFile,
+                            p.getContentType() != null ? p.getContentType() : "application/octet-stream",
+                            photoFileName)
+                            .doFinally(signal -> photoFile.delete());
+                });
 
-        Mono<String> videoLinkMono;
-        if (video != null && !video.isEmpty()) {
-            String videoFileName = "video_" + System.currentTimeMillis() +
-                    (video.getOriginalFilename() != null ?
-                            video.getOriginalFilename().substring(video.getOriginalFilename().lastIndexOf(".")) : ".mp4");
-            File videoFile;
-            try {
-                videoFile = File.createTempFile("video_", videoFileName);
-                video.transferTo(videoFile);
-            } catch (IOException e) {
-                return Mono.just(ResponseEntity.status(500).body("Video save error: " + e.getMessage()));
-            }
-            videoLinkMono = uploadToSupabase(videoFile,
-                    video.getContentType() != null ? video.getContentType() : "application/octet-stream",
-                    videoFileName)
-                    .doFinally(signal -> videoFile.delete());
-        } else {
-            videoLinkMono = Mono.just(null);
-        }
+        Mono<String> videoLinkMono = Mono.justOrEmpty(video)
+                .filter(v -> !v.isEmpty())
+                .flatMap(v -> {
+                    String videoFileName = "video_" + System.currentTimeMillis() +
+                            (v.getOriginalFilename() != null ?
+                                    v.getOriginalFilename().substring(v.getOriginalFilename().lastIndexOf(".")) : ".mp4");
+                    File videoFile;
+                    try {
+                        videoFile = File.createTempFile("video_", videoFileName);
+                        v.transferTo(videoFile);
+                    } catch (IOException e) {
+                        return Mono.error(new RuntimeException("Video save error: " + e.getMessage()));
+                    }
+                    return uploadToSupabase(videoFile,
+                            v.getContentType() != null ? v.getContentType() : "application/octet-stream",
+                            videoFileName)
+                            .doFinally(signal -> videoFile.delete());
+                });
 
-        return Mono.zip(photoLinkMono, videoLinkMono)
+        return Mono.zip(photoLinkMono.defaultIfEmpty(null), videoLinkMono.defaultIfEmpty(null))
                 .flatMap(tuple -> {
-                    String photoLink = tuple.getT1();
-                    String videoLink = tuple.getT2();
+                    registration.setPhotoLink(tuple.getT1());
+                    registration.setVideoLink(tuple.getT2());
 
-                    registration.setPhotoLink(photoLink);
-                    registration.setVideoLink(videoLink);
-
+                    // Firebase save logic
                     return Mono.fromCallable(() -> {
                         userRef.orderByChild("email").equalTo(registration.getEmail())
                                 .addListenerForSingleValueEvent(new ValueEventListener() {
