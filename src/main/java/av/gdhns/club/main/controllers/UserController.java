@@ -64,12 +64,12 @@ public class UserController {
                 return Mono.just(ResponseEntity.status(500).body("Error: Failed to save OTP"));
             }
 
-            if (photo == null) {
+            if (photo == null && video == null) {
+                return uploads(registration);
+            } else if (photo == null) {
                 return uploadsPhoto(registration, video);
             } else if (video == null) {
                 return uploads(registration, photo);
-            } else if (photo == null && video == null) {
-                return uploads(registration);
             }
 
             return uploads(registration, photo, video);
@@ -344,7 +344,6 @@ public class UserController {
                     return Mono.just(ResponseEntity.status(500).body("Error: " + e.getMessage()));
                 });
     }
-
 
     private boolean storeOtp(DatabaseReference ref, String email, String otp) {
         final boolean[] stored = {false};
