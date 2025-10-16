@@ -33,11 +33,21 @@ public class Mail {
     public static boolean sendOTP(String to, String otp) throws IOException {
         OkHttpClient client = new OkHttpClient();
 
+        JSONObject fromObj = new JSONObject();
+        fromObj.put("address", FROM);
+        fromObj.put("name", "GGPS DHN");
+
+        JSONObject toObj = new JSONObject();
+        toObj.put("address", to);
+        toObj.put("name", "User Name");
+
         JSONObject body = new JSONObject();
-        body.put("from", FROM);
-        body.put("to", to);
-        body.put("subject", "Your Verification OTP");
-        body.put("text", "Your OTP is: " + otp + " — valid for 5 minutes.");
+        body.put("from", fromObj);
+        body.put("to", toObj);  // ✅ single email object, not array or string
+        body.put("subject", "Your OTP Code");
+        body.put("plain", "Your OTP is: " + otp + " (valid for 5 min)");
+
+        System.out.println("BODY: " + body.toString(2)); // 👈 print this
 
         Request req = new Request.Builder()
                 .url(ENDPOINT)
