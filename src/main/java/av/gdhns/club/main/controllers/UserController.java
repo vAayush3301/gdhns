@@ -3,6 +3,7 @@ package av.gdhns.club.main.controllers;
 import av.gdhns.club.main.helpers.Mail;
 import av.gdhns.club.main.model.UserRegistrationModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.core.ApiFuture;
 import com.google.firebase.database.*;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -161,15 +162,22 @@ public class UserController {
     private boolean storeOtp(DatabaseReference ref, String email, String otp) {
         final boolean[] stored = {false};
 
+        DatabaseReference otpRef = ref.child("otps").child(email.replace(".", "_"));
+
         Map<String, Object> otpData = new HashMap<>();
         otpData.put("otp", hash(otp));
         otpData.put("expiresAt", Instant.now().plusSeconds(600).toString());
         otpData.put("used", false);
 
-        ref.child("otps").child(email.replace(".", "_")).setValueAsync(otpData).addListener(() -> {
+        try {
+            ApiFuture<Void> future = otpRef.setValueAsync(otpData);
+            future.get();
             System.out.println("OTP stored for E-Mail: " + email);
             stored[0] = true;
-        }, Runnable::run);
+        } catch (Exception e) {
+            System.out.println("Failed to save OTP: " + e.getMessage());
+            e.printStackTrace();
+        }
 
         return stored[0];
     }
