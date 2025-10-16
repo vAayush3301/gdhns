@@ -46,7 +46,7 @@ public class Mail {
                 .post(RequestBody.create(body.toString(), MediaType.get("application/json")))
                 .build();
 
-        System.out.println(req.body());
+        System.out.println(req);
 
         try (Response resp = client.newCall(req).execute()) {
             if (resp.isSuccessful()) {
