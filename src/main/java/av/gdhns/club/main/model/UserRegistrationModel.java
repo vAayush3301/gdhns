@@ -20,7 +20,7 @@ public class UserRegistrationModel {
         this.createdAt = getCurrentTimestamp();
     }
 
-    public UserRegistrationModel(String fullName, String phoneNumber, String email, String classId, String section, String admNo, String idea, String description, String projectTypeTopicTopic) {
+    public UserRegistrationModel(String fullName, String phoneNumber, String email, String classId, String section, String admNo, String idea, String description, String projectTypeTopic) {
         this.fullName = fullName;
         this.phoneNumber = phoneNumber;
         this.email = email;
