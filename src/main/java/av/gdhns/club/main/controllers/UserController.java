@@ -2,15 +2,11 @@ package av.gdhns.club.main.controllers;
 
 import av.gdhns.club.main.helpers.Mail;
 import av.gdhns.club.main.model.UserRegistrationModel;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.core.ApiFuture;
 import com.google.firebase.database.*;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -27,157 +23,50 @@ import static av.gdhns.club.main.helpers.Mail.hash;
 @RestController
 @RequestMapping("/registration_member")
 public class UserController {
-    private static final String SUPABASE_URL = "https://pmzkotxaodkqihopptti.supabase.co";
-    private static final String SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtemtvdHhhb2RrcWlob3BwdHRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNjMyNzEsImV4cCI6MjA3NTkzOTI3MX0.zzNqFU0nPdjxeMP3YAbzJKr_7Ra_b_BP03HLM9kECAg";
-    private static final String SUPABASE_STORAGE_BUCKET = "user-files";
     private final DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("member_registrations");
-    private final WebClient webClient;
-
-    public UserController() {
-        this.webClient = WebClient.builder()
-                .baseUrl(SUPABASE_URL)
-                .defaultHeader("apikey", SUPABASE_KEY)
-                .defaultHeader("Authorization", "Bearer " + SUPABASE_KEY)
-                .build();
-    }
 
     @PostMapping
-    public Mono<ResponseEntity<String>> createMemberRegistration(
-            @RequestParam("data") String userJson,
-            @RequestParam(value = "photo", required = false) MultipartFile photo,
-            @RequestParam(value = "video", required = false) MultipartFile video) {
-
-        if (userJson == null || userJson.isEmpty()) {
-            return Mono.just(ResponseEntity.status(400).body("Error: userJson is required"));
+    public Mono<ResponseEntity<String>> createMemberRegistration(@RequestBody UserRegistrationModel registration) {
+        if (registration == null || registration.getEmail() == null || registration.getEmail().isEmpty()) {
+            return Mono.just(ResponseEntity.status(400).body("Error: Email is required"));
         }
+        registration.setCreatedAt(Instant.now().toString());
 
+        String otp = Mail.generateOTP();
         try {
-            UserRegistrationModel registration = new ObjectMapper().readValue(userJson, UserRegistrationModel.class);
-            registration.setCreatedAt(Instant.now().toString());
-
-            String otp = Mail.generateOTP();
-            boolean sent = Mail.sendOTP(registration.getEmail(), otp);
-            if (!sent) {
-                return Mono.just(ResponseEntity.status(500).body("Error: Failed to send OTP"));
+            if (!Mail.sendOTP(registration.getEmail(), otp)) {
+                return Mono.just(ResponseEntity.status(500).body("Unable to send OTP!!!"));
             }
             if (!storeOtp(userRef, registration.getEmail(), otp)) {
-                return Mono.just(ResponseEntity.status(500).body("Error: Failed to save OTP"));
+                return Mono.just(ResponseEntity.status(500).body("Unable to store OTP!!!"));
             }
-
-            return uploads(registration, photo, video);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Mono.just(ResponseEntity.status(500).body("Error: " + e.getMessage()));
-        }
-    }
-
-    public Mono<String> uploadToSupabase(File file, String contentType, String fileName) {
-        System.out.println("Uploading file: " + fileName + " with content type: " + contentType);
-
-        try {
-            byte[] fileBytes = Files.readAllBytes(file.toPath());
-            return webClient.put()
-                    .uri("/storage/v1/object/" + SUPABASE_STORAGE_BUCKET + "/" + fileName)
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .bodyValue(fileBytes)
-                    .retrieve()
-                    .onStatus(status -> status.isError(), response -> response.bodyToMono(String.class)
-                            .flatMap(errorBody -> {
-                                System.err.println("Supabase error: " + response.statusCode() + " - " + errorBody);
-                                return Mono.error(new IOException("Supabase upload failed: " + errorBody));
-                            }))
-                    .bodyToMono(String.class)
-                    .map(response -> getPublicUrl(fileName));
         } catch (IOException e) {
-            return Mono.error(new IOException("Failed to read file: " + e.getMessage(), e));
+            throw new RuntimeException(e);
         }
-    }
-
-    public String getPublicUrl(String fileName) {
-        return SUPABASE_URL + "/storage/v1/object/public/" + SUPABASE_STORAGE_BUCKET + "/" + fileName;
-    }
-
-    private Mono<ResponseEntity<String>> uploads(UserRegistrationModel registration,
-                                                 MultipartFile photo,
-                                                 MultipartFile video) {
 
         final StringBuilder response = new StringBuilder();
 
-        // --- Photo Upload ---
-        Mono<String> photoLinkMono = Mono.justOrEmpty(photo)
-                .filter(p -> !p.isEmpty())
-                .flatMap(p -> {
-                    String extension = (p.getOriginalFilename() != null && p.getOriginalFilename().contains("."))
-                            ? p.getOriginalFilename().substring(p.getOriginalFilename().lastIndexOf("."))
-                            : ".png";
-                    String photoFileName = "photo_" + System.currentTimeMillis() + extension;
-
-                    try {
-                        File photoFile = File.createTempFile("photo_", extension);
-                        p.transferTo(photoFile);
-
-                        return uploadToSupabase(
-                                photoFile,
-                                (p.getContentType() != null) ? p.getContentType() : "application/octet-stream",
-                                photoFileName
-                        ).doFinally(sig -> photoFile.delete());
-                    } catch (IOException e) {
-                        return Mono.error(new RuntimeException("Photo save error: " + e.getMessage()));
-                    }
-                })
-                .switchIfEmpty(Mono.justOrEmpty((String) null)); // Safe null substitute
-
-        // --- Video Upload ---
-        Mono<String> videoLinkMono = Mono.justOrEmpty(video)
-                .filter(v -> !v.isEmpty())
-                .flatMap(v -> {
-                    String extension = (v.getOriginalFilename() != null && v.getOriginalFilename().contains("."))
-                            ? v.getOriginalFilename().substring(v.getOriginalFilename().lastIndexOf("."))
-                            : ".mp4";
-                    String videoFileName = "video_" + System.currentTimeMillis() + extension;
-
-                    try {
-                        File videoFile = File.createTempFile("video_", extension);
-                        v.transferTo(videoFile);
-
-                        return uploadToSupabase(
-                                videoFile,
-                                (v.getContentType() != null) ? v.getContentType() : "application/octet-stream",
-                                videoFileName
-                        ).doFinally(sig -> videoFile.delete());
-                    } catch (IOException e) {
-                        return Mono.error(new RuntimeException("Video save error: " + e.getMessage()));
-                    }
-                })
-                .switchIfEmpty(Mono.justOrEmpty((String) null));
-
-        // --- Combine Uploads ---
-        return Mono.zip(photoLinkMono, videoLinkMono)
-                .flatMap(tuple -> {
-                    registration.setPhotoLink(tuple.getT1());
-                    registration.setVideoLink(tuple.getT2());
-
-                    // Firebase save logic
-                    return Mono.fromCallable(() -> {
-                        userRef.orderByChild("email").equalTo(registration.getEmail())
-                                .addListenerForSingleValueEvent(new ValueEventListener() {
-                                    @Override
-                                    public void onDataChange(DataSnapshot snapshot) {
-                                        if (snapshot.exists()) {
-                                            response.append("User with email ").append(registration.getEmail()).append(" already exists.");
-                                        } else {
-                                            userRef.child(registration.getEmail().replace(".", "_")).setValueAsync(registration);
-                                            response.append("User added: ").append(registration.getFullName());
-                                        }
+        return Mono.fromCallable(() -> {
+                    userRef.orderByChild("email").equalTo(registration.getEmail())
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(DataSnapshot snapshot) {
+                                    if (snapshot.exists()) {
+                                        response.append("User with email ").append(registration.getEmail()).append(" already exists.");
+                                    } else {
+                                        userRef.child(registration.getEmail().replace(".", "_"))
+                                                .setValueAsync(registration);
+                                        response.append("User added: ").append(registration.getFullName());
                                     }
+                                }
 
-                                    @Override
-                                    public void onCancelled(DatabaseError error) {
-                                        response.append("Firebase error: ").append(error.getMessage());
-                                    }
-                                });
-                        return response.toString();
-                    });
+                                @Override
+                                public void onCancelled(DatabaseError error) {
+                                    response.append("Firebase error: ").append(error.getMessage());
+                                }
+                            });
+
+                    return response.toString();
                 })
                 .map(result -> ResponseEntity.ok(result.isEmpty() ? "Processing... Check logs" : result))
                 .onErrorResume(e -> {
@@ -185,7 +74,6 @@ public class UserController {
                     return Mono.just(ResponseEntity.status(500).body("Error: " + e.getMessage()));
                 });
     }
-
 
     private boolean storeOtp(DatabaseReference ref, String email, String otp) {
         final boolean[] stored = {false};
