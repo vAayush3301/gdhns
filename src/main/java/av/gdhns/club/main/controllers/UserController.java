@@ -103,45 +103,56 @@ public class UserController {
 
         final StringBuilder response = new StringBuilder();
 
+        // --- Photo Upload ---
         Mono<String> photoLinkMono = Mono.justOrEmpty(photo)
                 .filter(p -> !p.isEmpty())
                 .flatMap(p -> {
-                    String photoFileName = "photo_" + System.currentTimeMillis() +
-                            (p.getOriginalFilename() != null ?
-                                    p.getOriginalFilename().substring(p.getOriginalFilename().lastIndexOf(".")) : ".png");
-                    File photoFile;
+                    String extension = (p.getOriginalFilename() != null && p.getOriginalFilename().contains("."))
+                            ? p.getOriginalFilename().substring(p.getOriginalFilename().lastIndexOf("."))
+                            : ".png";
+                    String photoFileName = "photo_" + System.currentTimeMillis() + extension;
+
                     try {
-                        photoFile = File.createTempFile("photo_", photoFileName);
+                        File photoFile = File.createTempFile("photo_", extension);
                         p.transferTo(photoFile);
+
+                        return uploadToSupabase(
+                                photoFile,
+                                (p.getContentType() != null) ? p.getContentType() : "application/octet-stream",
+                                photoFileName
+                        ).doFinally(sig -> photoFile.delete());
                     } catch (IOException e) {
                         return Mono.error(new RuntimeException("Photo save error: " + e.getMessage()));
                     }
-                    return uploadToSupabase(photoFile,
-                            p.getContentType() != null ? p.getContentType() : "application/octet-stream",
-                            photoFileName)
-                            .doFinally(signal -> photoFile.delete());
-                });
+                })
+                .switchIfEmpty(Mono.justOrEmpty((String) null)); // Safe null substitute
 
+        // --- Video Upload ---
         Mono<String> videoLinkMono = Mono.justOrEmpty(video)
                 .filter(v -> !v.isEmpty())
                 .flatMap(v -> {
-                    String videoFileName = "video_" + System.currentTimeMillis() +
-                            (v.getOriginalFilename() != null ?
-                                    v.getOriginalFilename().substring(v.getOriginalFilename().lastIndexOf(".")) : ".mp4");
-                    File videoFile;
+                    String extension = (v.getOriginalFilename() != null && v.getOriginalFilename().contains("."))
+                            ? v.getOriginalFilename().substring(v.getOriginalFilename().lastIndexOf("."))
+                            : ".mp4";
+                    String videoFileName = "video_" + System.currentTimeMillis() + extension;
+
                     try {
-                        videoFile = File.createTempFile("video_", videoFileName);
+                        File videoFile = File.createTempFile("video_", extension);
                         v.transferTo(videoFile);
+
+                        return uploadToSupabase(
+                                videoFile,
+                                (v.getContentType() != null) ? v.getContentType() : "application/octet-stream",
+                                videoFileName
+                        ).doFinally(sig -> videoFile.delete());
                     } catch (IOException e) {
                         return Mono.error(new RuntimeException("Video save error: " + e.getMessage()));
                     }
-                    return uploadToSupabase(videoFile,
-                            v.getContentType() != null ? v.getContentType() : "application/octet-stream",
-                            videoFileName)
-                            .doFinally(signal -> videoFile.delete());
-                });
+                })
+                .switchIfEmpty(Mono.justOrEmpty((String) null));
 
-        return Mono.zip(photoLinkMono.defaultIfEmpty(null), videoLinkMono.defaultIfEmpty(null))
+        // --- Combine Uploads ---
+        return Mono.zip(photoLinkMono, videoLinkMono)
                 .flatMap(tuple -> {
                     registration.setPhotoLink(tuple.getT1());
                     registration.setVideoLink(tuple.getT2());
@@ -174,6 +185,7 @@ public class UserController {
                     return Mono.just(ResponseEntity.status(500).body("Error: " + e.getMessage()));
                 });
     }
+
 
     private boolean storeOtp(DatabaseReference ref, String email, String otp) {
         final boolean[] stored = {false};
