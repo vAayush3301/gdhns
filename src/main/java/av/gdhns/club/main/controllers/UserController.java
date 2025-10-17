@@ -33,6 +33,9 @@ public class UserController {
     private final DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("member_registrations");
     private final WebClient webClient;
 
+    private UserRegistrationModel registration;
+    private MultipartFile photo, video;
+
     public UserController() {
         this.webClient = WebClient.builder()
                 .baseUrl(SUPABASE_URL)
@@ -42,7 +45,7 @@ public class UserController {
     }
 
     @PostMapping
-    public Mono<ResponseEntity<String>> createMemberRegistration(
+    public Mono<ResponseEntity<String>> sendOTP(
             @RequestParam("data") String userJson,
             @RequestParam(value = "photo", required = false) MultipartFile photo,
             @RequestParam(value = "video", required = false) MultipartFile video) {
@@ -64,7 +67,11 @@ public class UserController {
                 return Mono.just(ResponseEntity.status(500).body("Error: Failed to save OTP"));
             }
 
-            return uploads(registration, photo, video);
+            this.registration = registration;
+            this.photo = photo;
+            this.video = video;
+
+            return Mono.just(ResponseEntity.status(200).body("OTP sent."));
         } catch (Exception e) {
             e.printStackTrace();
             return Mono.just(ResponseEntity.status(500).body("Error: " + e.getMessage()));
@@ -215,8 +222,10 @@ public class UserController {
                                             @RequestParam String otpEntered) {
         try {
             boolean valid = checkOtp(userRef, email, otpEntered);
-            if (valid) return ResponseEntity.ok("OTP verified successfully");
-            else return ResponseEntity.status(400).body("Invalid or expired OTP");
+            if (valid) {
+                uploads(registration, photo, video);
+                return ResponseEntity.ok("OTP verified successfully");
+            } else return ResponseEntity.status(400).body("Invalid or expired OTP");
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body("Error verifying OTP");
