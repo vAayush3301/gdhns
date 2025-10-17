@@ -1,30 +1,22 @@
-# ===== Stage 1: Build the project with Gradle =====
 FROM gradle:8.3-jdk17 AS build
-
-# Set working directory
 WORKDIR /app
 
-# Copy all source files
-COPY . .
+COPY build.gradle settings.gradle gradle.properties ./
+COPY gradle gradle
 
-# Build the project (skip tests for faster build)
-RUN gradle clean build -x test
+RUN gradle dependencies --no-daemon || return 0
 
-# ===== Stage 2: Create lightweight runtime image =====
+COPY src src
+
+RUN gradle clean bootJar -x test --no-daemon
+
 FROM openjdk:17-jdk-slim
-
-# Set working directory
 WORKDIR /app
 
-# Copy the built JAR from the previous stage
 COPY --from=build /app/build/libs/*.jar app.jar
 
-# Expose the port your Spring Boot app runs on
 EXPOSE 8080
 
-# Environment variable for Firebase service account JSON
-# (Render will set this in the dashboard)
-ENV GOOGLE_APPLICATION_CREDENTIALS_JSON=""
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
 
-# Run the app
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
