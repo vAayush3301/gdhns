@@ -22,7 +22,7 @@ public class Info {
         <html>
         <head>
           <title>Server Info</title>
-          <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/4712/4712100.png" type="image/png">
+          <link rel="icon" href="https://ggps-club.onrender.com/imgs/logo.png" type="image/png">
           <style>
             body { font-family: Arial, sans-serif; background: #0d1117; color: #c9d1d9; text-align: center; padding: 40px; }
             .card { background: #161b22; border-radius: 10px; display: inline-block; padding: 30px; box-shadow: 0 0 15px #0d1117; }
