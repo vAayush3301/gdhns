@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: gdhns
+    env: docker
+    plan: free
+    buildCommand: "./gradlew clean bootJar -x test --no-daemon"
+    startCommand: "java -jar app.jar"
+    disk:
+      name: gradle-cache
+      mountPath: /root/.gradle
+    autoDeploy: true
