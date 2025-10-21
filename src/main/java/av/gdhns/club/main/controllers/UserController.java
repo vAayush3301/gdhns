@@ -4,16 +4,10 @@ import av.gdhns.club.main.helpers.Mail;
 import av.gdhns.club.main.model.UserRegistrationModel;
 import com.google.api.core.ApiFuture;
 import com.google.firebase.database.*;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,18 +26,10 @@ public class UserController {
         }
         registration.setCreatedAt(Instant.now().toString());
 
-        String otp = Mail.generateOTP();
-        try {
-            if (!Mail.sendOTP(registration.getEmail(), otp)) {
-                return Mono.just(ResponseEntity.status(500).body("Unable to send OTP!!!"));
-            }
-            if (!storeOtp(userRef, registration.getEmail(), otp)) {
-                return Mono.just(ResponseEntity.status(500).body("Unable to store OTP!!!"));
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return upload(registration);
+    }
 
+    private Mono<ResponseEntity<String>> upload(UserRegistrationModel registration) {
         final StringBuilder response = new StringBuilder();
 
         return Mono.fromCallable(() -> {
@@ -108,6 +94,28 @@ public class UserController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body("Error verifying OTP");
+        }
+    }
+
+    @PostMapping("/send")
+    public Mono<ResponseEntity<String>> sendOtp(@RequestParam String email) {
+        try {
+            String otp = Mail.generateOTP();
+
+            boolean sent = Mail.sendOTP(email, otp);
+            if (!sent) {
+                return Mono.just(ResponseEntity.status(500).body("Unable to send OTP!!!"));
+            }
+
+            boolean stored = storeOtp(userRef, email, otp);
+            if (!stored) {
+                return Mono.just(ResponseEntity.status(500).body("Unable to store OTP!!!"));
+            }
+
+            return Mono.just(ResponseEntity.status(200).body("OTP sent and stored!!!"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Mono.just(ResponseEntity.status(500).body("Unable to send OTP!!! Internal Server Error: " + e.getMessage()));
         }
     }
 
