@@ -33,7 +33,7 @@ public class Info {
         </head>
         <body>
           <div class='card'>
-            <img src='https://cdn-icons-png.flaticon.com/512/4712/4712100.png' class='icon'>
+            <img src='https://ggps-club.onrender.com/imgs/logo.png' class='icon'>
             <h1>Server Status</h1>
             <div class='stat'>🕒 Uptime: %d min %d sec</div>
             <div class='stat'>🔗 Active Threads: %d</div>
