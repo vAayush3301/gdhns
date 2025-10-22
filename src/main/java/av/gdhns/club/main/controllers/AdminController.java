@@ -20,8 +20,7 @@ import java.util.concurrent.CountDownLatch;
 public class AdminController {
     DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("member_registrations");
 
-    @Value("${API_KEY:default-key}")
-    private String apiKeyValue;
+    private final String apiKeyValue = System.getenv("API_KEY");
 
     @GetMapping("/registrations")
     public ResponseEntity<?> getRegistrations(@RequestHeader("X-API-KEY") String apiKey) {
