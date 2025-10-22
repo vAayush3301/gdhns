@@ -59,4 +59,4 @@ Dedicated Render server, deployed specifically for ggps-club.onrender.com. Not f
 ## 📄 License
 
 #### MIT
-Use it, abuse it, IDC.
+Use it, abuse it, I don't care.
