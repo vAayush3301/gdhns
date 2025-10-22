@@ -48,15 +48,15 @@ Build and run using Docker (optional)
 docker build -t gdhns .
 docker run -p 8080:8080 gdhns
 ```
-> **Pro Tip:** No comments. No JavaDoc. Read the damn code and figure it out yourself.
+> **Pro Tip:** No comments. No JavaDoc. Read the damn code and figure it out yourself. You'll thank me later (or maybe not).
 
 ---
 
 ## 🌐 Deployment
 
-### Dedicated Render server, deployed specifically for ggps-club.onrender.com. Not for public use. Anyone else touching it will have to redefine the entire logic, so… don’t.
+Dedicated Render server, deployed specifically for ggps-club.onrender.com. Not for public use. Anyone else touching it will have to redefine the entire logic, so… don’t.
 
 ## 📄 License
 
-### MIT
+#### MIT
 Use it, abuse it, IDC.
