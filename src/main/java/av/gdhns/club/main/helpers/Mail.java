@@ -70,7 +70,7 @@ public class Mail {
         body.put("from", fromObj);
         body.put("to", toObj);
         body.put("subject", "Your OTP Code");
-        body.put("plain", "Your OTP is: " + otp + " (valid for 5 min)");
+        body.put("plain", "Your OTP is: " + otp + " (valid for 10 minutes).");
         return body;
     }
 }
