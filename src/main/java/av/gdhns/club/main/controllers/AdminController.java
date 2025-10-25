@@ -72,7 +72,7 @@ public class AdminController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestParam String userName, @RequestParam(required = false) String password) {
+    public ResponseEntity<String> login(@RequestParam String userName, @RequestParam String password) {
         String passwordHash = hash(password);
 
         try {
