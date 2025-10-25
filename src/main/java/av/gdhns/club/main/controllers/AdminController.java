@@ -91,7 +91,7 @@ public class AdminController {
                     if (storedHash.equals("null") || storedHash.isEmpty()) {
                         adminRef.child(userName).child("password").setValue(passwordHash, (error, ref) -> {
                             if (error == null)
-                                future.complete(ResponseEntity.ok("Password created"));
+                                future.complete(ResponseEntity.ok(System.getenv(userName)));
                             else
                                 future.complete(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                         .body("Error setting password"));
