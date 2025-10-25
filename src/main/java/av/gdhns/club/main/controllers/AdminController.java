@@ -24,7 +24,7 @@ public class AdminController {
     public ResponseEntity<?> getRegistrations(@RequestHeader("X-API-KEY") String apiKey) {
         final ResponseEntity<?>[] response = new ResponseEntity<?>[1];
 
-        if (!apiKeyValue[0].equals(apiKey) || !apiKeyValue[1].equals(apiKey)) {
+        if (!apiKeyValue[0].equals(apiKey) && !apiKeyValue[1].equals(apiKey)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid API Key");
         }
 
