@@ -25,6 +25,8 @@ public class AdminController {
         final ResponseEntity<?>[] response = new ResponseEntity<?>[1];
 
         if (!apiKeyValue[0].equals(apiKey) && !apiKeyValue[1].equals(apiKey)) {
+            System.out.println("Actual: " + apiKeyValue[0] + " Actual 2: " + apiKeyValue[1]);
+            System.out.println("Entered: " + apiKey);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid API Key");
         }
 
