@@ -90,7 +90,7 @@ public class UserController {
         try {
             boolean valid = checkOtp(userRef, email, otpEntered);
             if (valid) {
-                userRef.child("otps").child(email.replace("@", "_")).removeValueAsync();
+                userRef.child("otps").child(email.replace(".", "_")).removeValueAsync();
 
                 return ResponseEntity.ok("OTP verified successfully");
             } else return ResponseEntity.status(400).body("Invalid or expired OTP");
