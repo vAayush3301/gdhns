@@ -29,7 +29,7 @@ public class FirebaseConfig {
         return FirebaseApp.getInstance();
     }
 
-    @Bean
+    @Bean(name = "ARR")
     public FirebaseApp arrangement_init() throws IOException {
         if (FirebaseApp.getApps().isEmpty()) {
             String firebaseJson = System.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON_ARRANGEMENT");
