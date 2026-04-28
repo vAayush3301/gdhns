@@ -1,4 +1,4 @@
-package av.gdhns.club.main.config;
+package av.gdhns.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

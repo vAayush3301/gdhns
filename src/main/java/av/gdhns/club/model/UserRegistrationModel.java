@@ -1,4 +1,4 @@
-package av.gdhns.club.main.model;
+package av.gdhns.club.model;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

@@ -1,8 +1,7 @@
-package av.gdhns.club.main.controllers;
+package av.gdhns.club.controllers;
 
-import av.gdhns.club.main.model.UserRegistrationModel;
+import av.gdhns.club.model.UserRegistrationModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.Http;
 import com.google.firebase.database.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

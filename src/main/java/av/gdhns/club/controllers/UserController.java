@@ -1,7 +1,7 @@
-package av.gdhns.club.main.controllers;
+package av.gdhns.club.controllers;
 
-import av.gdhns.club.main.helpers.Mail;
-import av.gdhns.club.main.model.UserRegistrationModel;
+import av.gdhns.club.helpers.Mail;
+import av.gdhns.club.model.UserRegistrationModel;
 import com.google.api.core.ApiFuture;
 import com.google.firebase.database.*;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +12,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-import static av.gdhns.club.main.helpers.Mail.hash;
+import static av.gdhns.club.helpers.Mail.hash;
 
 @RestController
 @RequestMapping("/registration_member")

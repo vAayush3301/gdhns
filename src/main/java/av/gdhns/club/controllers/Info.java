@@ -1,6 +1,6 @@
-package av.gdhns.club.main.controllers;
+package av.gdhns.club.controllers;
 
-import av.gdhns.club.main.MainApplication;
+import av.gdhns.MainApplication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 

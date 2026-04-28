@@ -1,6 +1,5 @@
-package av.gdhns.club.main;
+package av.gdhns;
 
-import av.gdhns.club.main.config.FirebaseConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -13,8 +12,6 @@ public class MainApplication {
 
     public static void main(String[] args) throws IOException {
         SpringApplication.run(MainApplication.class, args);
-
-        FirebaseConfig.init();
     }
 
 }

@@ -1,4 +1,4 @@
-package av.gdhns.club.main.helpers;
+package av.gdhns.club.helpers;
 
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
