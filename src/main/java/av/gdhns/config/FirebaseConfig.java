@@ -13,35 +13,49 @@ import java.io.IOException;
 @Configuration
 public class FirebaseConfig {
 
-    @Bean
+    @Bean(name = "MAIN")
     public FirebaseApp main_init() throws IOException {
-        if (FirebaseApp.getApps().isEmpty()) {
-            String firebaseJson = System.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON_MAIN");
 
-            FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(new ByteArrayInputStream(firebaseJson.getBytes())))
-                    .setDatabaseUrl("https://ggpsclub-default-rtdb.asia-southeast1.firebasedatabase.app/")
-                    .build();
-
-            System.out.println("Firebase Main Initialization");
-            return FirebaseApp.initializeApp(options);
+        for (FirebaseApp app : FirebaseApp.getApps()) {
+            if (app.getName().equals("[DEFAULT]")) {
+                return app;
+            }
         }
-        return FirebaseApp.getInstance();
+
+        String firebaseJson =
+                System.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON_MAIN");
+
+        FirebaseOptions options = FirebaseOptions.builder()
+                .setCredentials(GoogleCredentials.fromStream(
+                        new ByteArrayInputStream(firebaseJson.getBytes())))
+                .setDatabaseUrl("https://ggpsclub-default-rtdb.asia-southeast1.firebasedatabase.app/")
+                .build();
+
+        System.out.println("Firebase Main Initialization");
+
+        return FirebaseApp.initializeApp(options); // DEFAULT
     }
 
     @Bean(name = "ARR")
     public FirebaseApp arrangement_init() throws IOException {
-        if (FirebaseApp.getApps().isEmpty()) {
-            String firebaseJson = System.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON_ARRANGEMENT");
 
-            FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(new ByteArrayInputStream(firebaseJson.getBytes())))
-                    .setDatabaseUrl("https://ggpsclub-default-rtdb.asia-southeast1.firebasedatabase.app/")
-                    .build();
-
-            System.out.println("Firebase Arrangement Initialization");
-            return FirebaseApp.initializeApp(options, "ARR");
+        for (FirebaseApp app : FirebaseApp.getApps()) {
+            if (app.getName().equals("ARR")) {
+                return app;
+            }
         }
-        return FirebaseApp.getInstance();
+
+        String firebaseJson =
+                System.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON_ARRANGEMENT");
+
+        FirebaseOptions options = FirebaseOptions.builder()
+                .setCredentials(GoogleCredentials.fromStream(
+                        new ByteArrayInputStream(firebaseJson.getBytes())))
+                .setDatabaseUrl("https://ggpsclub-default-rtdb.asia-southeast1.firebasedatabase.app/")
+                .build();
+
+        System.out.println("Firebase Arrangement Initialization");
+
+        return FirebaseApp.initializeApp(options, "ARR");
     }
 }
